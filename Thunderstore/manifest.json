@@ -1,6 +1,6 @@
 {
   "name": "DoorBreach",
   "version_number": "1.0.0",
-  "description": "",
-  "dependencies": ["BepInEx-BepInExPack-5.4.2100"],
+  "description": "DoorBreach is a mod for Lethal Company that Allows players to hit a locked door many times with a shovel to open it.",
+  "dependencies": ["BepInEx-BepInExPack-5.4.2100"]
 }

@@ -6,12 +6,12 @@
 		<ProduceReferenceAssembly>False</ProduceReferenceAssembly>
 
 		<RootNamespace>Nyxchrono.$(MSBuildProjectName)</RootNamespace>
+		
 		<AssemblyName>Nyxchrono-$(MSBuildProjectName)</AssemblyName>
-		<Copyright></Copyright>
 		<Product>$(MSBuildProjectName)</Product>
 		<Version>1.0.0</Version>
-
-		<Description></Description>
+		
+		<Description>A mod for Lethal Company</Description>
 
 		<RestoreAdditionalProjectSources>
 			https://api.nuget.org/v3/index.json;
@@ -83,7 +83,7 @@
 	</ItemGroup>
 
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-		<Exec Command="xcopy &quot;$(ProjectDir)$(OutDir)&quot; &quot;C:/users/nyxchrono/Documents/Shared/&quot; /Y /I" />
-		<Exec Command="exit 0" />
+		<Exec Command="../postbuild.sh $(TargetDir)$(TargetName).dll" />
+		<Exec Command="../postbuild.sh $(TargetDir)$(TargetName).pdb" />
 	</Target>
 </Project>
