@@ -47,7 +47,6 @@ ExportedObj/
 *.pidb
 *.booproj
 *.svd
-*.pdb
 *.mdb
 *.opendb
 *.VC.db
@@ -78,7 +77,12 @@ crashlytics-build.properties
 
 *.zip
 
-# other shiz
+# other stuff
 /Assemblies/**
 /bin/**
 /obj/**
+/Thunderstore/**
+.idea/
+.vscode/
+*.dll
+*.pdb

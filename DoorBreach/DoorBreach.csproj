@@ -41,16 +41,20 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		
+		<!-- ES3 -->
+		<!-- <Reference Include="Assembly-CSharp-firstpass"> -->
+		<!-- 	<HintPath>..\Assemblies\Game\Assembly-CSharp-firstpass.dll</HintPath> -->
+		<!-- </Reference> -->
+		
 		<Reference Include="Assembly-CSharp">
 			<HintPath>..\Assemblies\Game\Assembly-CSharp.dll</HintPath>
 		</Reference>
-		
-		<Reference Include="Assembly-CSharp-firstpass">
-			<HintPath>..\Assemblies\Game\Assembly-CSharp-firstpass.dll</HintPath>
-		</Reference>
 
+		<!-- -->
 		<Reference Include="BepInEx">
-			<HintPath>..\..\..\..\AppData\Roaming\r2modmanPlus-local\LethalCompany\profiles\Default\BepInEx\core\BepInEx.dll</HintPath>
+			<!-- <HintPath>..\..\..\..\AppData\Roaming\r2modmanPlus-local\LethalCompany\profiles\Default\BepInEx\core\BepInEx.dll</HintPath> -->
+			<HintPath>..\Assemblies\BepInEx\BepInEx.dll</HintPath>
 		</Reference>
 
 		<Reference Include="MMHOOK_Assembly-CSharp">
@@ -65,25 +69,13 @@
 			<HintPath>..\Assemblies\Game\Unity.Netcode.Runtime.dll</HintPath>
 		</Reference>
 		
-		<Reference Include="Unity.TextMeshPro">
-			<HintPath>..\Assemblies\Game\Unity.TextMeshPro.dll</HintPath>
-		</Reference>
-		
 		<Reference Include="UnityEngine">
 			<HintPath>..\Assemblies\Game\UnityEngine.dll</HintPath>
 		</Reference>
 		
-		<Reference Include="UnityEngine.AssetBundleModule">
-			<HintPath>..\Assemblies\Game\UnityEngine.AssetBundleModule.dll</HintPath>
-		</Reference>
-		
-		<Reference Include="UnityEngine.UI">
-			<HintPath>..\Assemblies\Game\UnityEngine.UI.dll</HintPath>
-		</Reference>
 	</ItemGroup>
-
+	
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-		<Exec Command="../postbuild.sh $(TargetDir)$(TargetName).dll" />
-		<Exec Command="../postbuild.sh $(TargetDir)$(TargetName).pdb" />
+		<Exec Command="../postbuild.sh &quot;$(TargetDir)$(TargetName).dll&quot;"/>
 	</Target>
 </Project>

@@ -42,3 +42,7 @@ If you would like to contribute to this project, please fork the repository and 
 ## License
 
 This mod is released under the MIT License. See LICENSE.md file for details.
+
+## Attribution
+
+As long as you credit my name or link to my github project, that's okay.

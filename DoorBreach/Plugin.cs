@@ -1,9 +1,16 @@
 ﻿using System;
+using System.Globalization;
 using System.Reflection;
 using BepInEx;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Nyxchrono.DoorBreach;
+
+// Suggestions/Ideas:
+// Add durability to shovel, delete after 30ish hits?
+// Add option to generate more locked doors
+// Add option to make heavier melee weapons do more hits per swing against doors
 
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 public class Plugin : BaseUnityPlugin
@@ -12,9 +19,9 @@ public class Plugin : BaseUnityPlugin
     
     #region Config
     
-    private static BepInEx.Configuration.ConfigEntry<bool> configGeneralEnabled;
-    private static BepInEx.Configuration.ConfigEntry<int>  configGeneralMinHits;
-    private static BepInEx.Configuration.ConfigEntry<int>  configGeneralMaxHits;
+    private static BepInEx.Configuration.ConfigEntry<bool> _configGeneralEnabled;
+    private static BepInEx.Configuration.ConfigEntry<int>  _configGeneralMinHits;
+    private static BepInEx.Configuration.ConfigEntry<int>  _configGeneralMaxHits;
     
     /*
     private static BepInEx.Configuration.ConfigEntry<bool>   configIdentBackfill;
@@ -26,7 +33,7 @@ public class Plugin : BaseUnityPlugin
     
     private void LoadConfig()
     {
-       configGeneralEnabled = Config.Bind(
+       _configGeneralEnabled = Config.Bind(
             new BepInEx.Configuration.ConfigDefinition("General", "Enabled"), 
             true, 
             new BepInEx.Configuration.ConfigDescription(
@@ -35,7 +42,7 @@ public class Plugin : BaseUnityPlugin
             )
         );
         
-        configGeneralMinHits = Config.Bind<int>(
+        _configGeneralMinHits = Config.Bind<int>(
             new BepInEx.Configuration.ConfigDefinition("General", "MinHits"),
             10,
             new BepInEx.Configuration.ConfigDescription(
@@ -44,33 +51,28 @@ public class Plugin : BaseUnityPlugin
             )
         );
 
-        configGeneralMaxHits = Config.Bind<int>(
+        _configGeneralMaxHits = Config.Bind<int>(
             new BepInEx.Configuration.ConfigDefinition("General","MaxHits"),
             20,
             new BepInEx.Configuration.ConfigDescription(
-                "The maximum number of hits required to open a locked door",
+                "The maximum number of hits required to open a locked door\nMAKE SURE THIS VALUE IS GREATER THAN MinHits!!!",
                 new BepInEx.Configuration.AcceptableValueRange<int>(1, 999)
             )
         );
         
         // Prevent min being lower than the max
-        if (configGeneralMinHits.Value > configGeneralMaxHits.Value)
+        if (_configGeneralMinHits.Value > _configGeneralMaxHits.Value)
         {
-            configGeneralMaxHits.Value = configGeneralMinHits.Value * 2;
+            LogSource.LogWarning($"{nameof(_configGeneralMaxHits)} was less than {nameof(_configGeneralMinHits)}!");
+            LogSource.LogWarning($"Setting {nameof(_configGeneralMaxHits)} to ({nameof(_configGeneralMinHits)} * 2)");
+            _configGeneralMaxHits.Value = _configGeneralMinHits.Value * 2;
         }
     }
     
     #endregion Config
     
-    /// <summary>
-    /// Uses reflection to get the field value from an object.
-    /// </summary>
-    ///
-    /// <param name="type">The instance type.</param>
-    /// <param name="instance">The instance object.</param>
-    /// <param name="fieldName">The field's name which is to be fetched.</param>
-    ///
-    /// <returns>The field value from the object.</returns>
+    #region Utils
+    
     private static object GetInstanceField(Type type, object instance, string fieldName)
     {
         const BindingFlags bindFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
@@ -78,8 +80,7 @@ public class Plugin : BaseUnityPlugin
         return field?.GetValue(instance);
     }
     
-    // Suggestion:
-    // Add durability to shovel, delete after 30ish hits?
+    #endregion Utils
     
     #region Unity Methods
     
@@ -90,7 +91,7 @@ public class Plugin : BaseUnityPlugin
         
         LogSource.LogInfo($"{MyPluginInfo.PLUGIN_GUID} v{MyPluginInfo.PLUGIN_VERSION} is initializing");
 
-        if (configGeneralEnabled.Value == false)
+        if (_configGeneralEnabled.Value == false)
         {
             LogSource.LogInfo($"{MyPluginInfo.PLUGIN_GUID} v{MyPluginInfo.PLUGIN_VERSION} is disabled due to config setting");
             return;
@@ -113,32 +114,30 @@ public class Plugin : BaseUnityPlugin
 
     public class DoorHitInfo : MonoBehaviour
     {
-        public int numOfHits;
-        public DoorLock doorLock;
+        public int NumOfHits;
+        public DoorLock Lock;
 
         public void Start()
         {
-            numOfHits = 0;
-            doorLock = GetComponent<DoorLock>();
+            NumOfHits = 0;
+            Lock = GetComponent<DoorLock>();
 
-            if (doorLock.isLocked)
+            if (Lock.isLocked)
             {
-                numOfHits = new System.Random().Next(configGeneralMinHits.Value, configGeneralMaxHits.Value);
-                LogSource.LogDebug($"Door ({doorLock.gameObject.GetInstanceID()}) will take {numOfHits} hits");
+                NumOfHits = new System.Random().Next(_configGeneralMinHits.Value, _configGeneralMaxHits.Value);
+                LogSource.LogDebug($"Door ({Lock.gameObject.GetInstanceID()}) will take {NumOfHits} hits");
             }
         }
-
         
-
         public void OnHit()
         {
-            if (--numOfHits <= 0)
+            if (--NumOfHits <= 0)
             {
-                OpenDoor(doorLock);
+                OpenDoor(Lock);
             }
             else
             {
-                LogSource.LogDebug($"Door ({doorLock.gameObject.GetInstanceID()}) has numOfHits remaining: {numOfHits}");
+                LogSource.LogDebug($"Door ({Lock.gameObject.GetInstanceID()}) has {nameof(NumOfHits)} remaining: {NumOfHits}");
             }
         }
 
@@ -151,15 +150,14 @@ public class Plugin : BaseUnityPlugin
                 door.UnlockDoorSyncWithServer(); // Also unlocks locally
             }
 
-            // Open door if closed
-            var isDoorOpened = (bool)GetInstanceField(typeof(DoorLock), door, "isDoorOpened");
-            if (!isDoorOpened)
-            {
-                LogSource.LogDebug($"Opening door ({door.gameObject.GetInstanceID()})");
-                // door.OpenOrCloseDoor(StartOfRound.Instance.localPlayerController);
-                door.gameObject.GetComponent<AnimatedObjectTrigger>().TriggerAnimationNonPlayer(true, true);
-                door.OpenDoorAsEnemyServerRpc();
-            }
+            // Door is already open, do nothing
+            if ((bool)GetInstanceField(typeof(DoorLock), door, "isDoorOpened")) 
+                return;
+            
+            LogSource.LogDebug($"Opening door ({door.gameObject.GetInstanceID()})");
+            // door.OpenOrCloseDoor(StartOfRound.Instance.localPlayerController);
+            door.gameObject.GetComponent<AnimatedObjectTrigger>().TriggerAnimationNonPlayer(true, true);
+            door.OpenDoorAsEnemyServerRpc();
         }
     }
 
@@ -183,7 +181,7 @@ public class Plugin : BaseUnityPlugin
             //door.LockDoor();
         }
         
-        LogSource.LogDebug($"Added DoorHitInfo to {numOfDoors} doors");
+        LogSource.LogDebug($"Added {nameof(DoorHitInfo)} to {numOfDoors} doors");
     }
     
     private static void Shovel_HitShovel(On.Shovel.orig_HitShovel orig, Shovel self, bool cancel)
@@ -191,7 +189,7 @@ public class Plugin : BaseUnityPlugin
         // Call the original game function
         orig(self, cancel);
 
-        // Raycast in front of the player
+        // Raycast in front of the player // This is exactly what the game does, except I've added a mask to get only doors
         Transform gpCamTransform = self.playerHeldBy.gameplayCamera.transform;
         var hits = Physics.SphereCastAll(
             gpCamTransform.position + gpCamTransform.right * -0.35f,
@@ -210,16 +208,14 @@ public class Plugin : BaseUnityPlugin
             DoorHitInfo lockedDoorInfo = hit.collider.gameObject.GetComponent<DoorHitInfo>();
             if (lockedDoorInfo != null)
             {
-                string lockTypeString = (lockedDoorInfo.doorLock.isLocked ? "locked" : "unlocked");
-                LogSource.LogDebug($"Hit a {lockTypeString} door ({lockedDoorInfo.doorLock.gameObject.GetInstanceID()})");
-
+                //string lockTypeString = (lockedDoorInfo.doorLock.isLocked ? "locked" : "unlocked");
+                //LogSource.LogDebug($"Hit a {lockTypeString} door ({lockedDoorInfo.doorLock.gameObject.GetInstanceID()})");
                 lockedDoorInfo.OnHit();
-                
                 break;
             }
         }
     }
     
     #endregion Hooks
-
+    
 }
