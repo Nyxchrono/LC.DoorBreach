@@ -41,7 +41,7 @@ If you would like to contribute to this project, please fork the repository and 
 
 ## License
 
-This mod is released under the MIT License. See LICENSE.md file for details.
+This mod is released under the CC BY-NC-SA 4.0 License. See LICENSE.md file for details.
 
 ## Attribution
 
