@@ -1,18 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<TargetFramework>netstandard2.1</TargetFramework>
+
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<LangVersion>latest</LangVersion>
 		<ProduceReferenceAssembly>False</ProduceReferenceAssembly>
 
+		<AssemblyName>Nyxchrono-$(MSBuildProjectName)</AssemblyName> <!-- PLUGIN_GUID -->
+		<Product>$(MSBuildProjectName)</Product>                     <!-- PLUGIN_NAME -->
+		<Version>1.1.0</Version>                                     <!-- PLUGIN_VERSION -->
+		<Description>DoorBreach is a mod for Lethal Company that allows players to hit a locked door many times with a shovel to open it.</Description>
+
 		<RootNamespace>Nyxchrono.$(MSBuildProjectName)</RootNamespace>
 		
-		<AssemblyName>Nyxchrono-$(MSBuildProjectName)</AssemblyName>
-		<Product>$(MSBuildProjectName)</Product>
-		<Version>1.0.0</Version>
-		
-		<Description>A mod for Lethal Company</Description>
-
 		<RestoreAdditionalProjectSources>
 			https://api.nuget.org/v3/index.json;
 			https://nuget.bepinex.dev/v3/index.json;
@@ -30,10 +30,10 @@
 	</Target>
 
 	<ItemGroup>
-		<PackageReference Include="BepInEx.Analyzers" Version="1.*" PrivateAssets="all" />
+		<PackageReference Include="BepInEx.Analyzers" Version="1.0.8" PrivateAssets="all" />
 		<PackageReference Include="BepInEx.Core" Version="5.4.*" />
-		<PackageReference Include="BepInEx.PluginInfoProps" Version="2.*" />
-		<PackageReference Include="UnityEngine.Modules" Version="2022.3.9" IncludeAssets="compile" />
+		<PackageReference Include="BepInEx.PluginInfoProps" Version="2.1.0" />
+		<PackageReference Include="UnityEngine.Modules" Version="2023.2.4" IncludeAssets="compile" />
 	</ItemGroup>
 
 	<ItemGroup Condition="'$(TargetFramework.TrimEnd(`0123456789`))' == 'net'">
@@ -41,41 +41,60 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		
-		<!-- ES3 -->
-		<!-- <Reference Include="Assembly-CSharp-firstpass"> -->
-		<!-- 	<HintPath>..\Assemblies\Game\Assembly-CSharp-firstpass.dll</HintPath> -->
-		<!-- </Reference> -->
-		
 		<Reference Include="Assembly-CSharp">
 			<HintPath>..\Assemblies\Game\Assembly-CSharp.dll</HintPath>
 		</Reference>
+		
+		<Reference Include="Assembly-CSharp-firstpass">
+			<HintPath>..\Assemblies\Game\Assembly-CSharp-firstpass.dll</HintPath>
+		</Reference>
 
-		<!-- -->
 		<Reference Include="BepInEx">
-			<!-- <HintPath>..\..\..\..\AppData\Roaming\r2modmanPlus-local\LethalCompany\profiles\Default\BepInEx\core\BepInEx.dll</HintPath> -->
-			<HintPath>..\Assemblies\BepInEx\BepInEx.dll</HintPath>
+			<HintPath>..\Assemblies\BepInEx\core\BepInEx.dll</HintPath>
 		</Reference>
 
 		<Reference Include="MMHOOK_Assembly-CSharp">
 			<HintPath>..\Assemblies\MMHOOK\MMHOOK_Assembly-CSharp.dll</HintPath>
 		</Reference>
 		
+		<Reference Include="Mono.Cecil">
+		  <HintPath>..\Assemblies\BepInEx\Mono.Cecil.dll</HintPath>
+		</Reference>
+
+		<Reference Include="Mono.Cecil.Rocks">
+		  <HintPath>..\Assemblies\BepInEx\Mono.Cecil.Rocks.dll</HintPath>
+		</Reference>
+		
 		<Reference Include="MonoMod.RuntimeDetour">
 			<HintPath>..\Assemblies\BepInEx\MonoMod.RuntimeDetour.dll</HintPath>
+		</Reference>
+		
+		<Reference Include="MonoMod.Utils">
+		  <HintPath>..\Assemblies\BepInEx\MonoMod.Utils.dll</HintPath>
 		</Reference>
 
 		<Reference Include="Unity.Netcode.Runtime">
 			<HintPath>..\Assemblies\Game\Unity.Netcode.Runtime.dll</HintPath>
 		</Reference>
 		
+		<Reference Include="Unity.TextMeshPro">
+			<HintPath>..\Assemblies\Game\Unity.TextMeshPro.dll</HintPath>
+		</Reference>
+		
 		<Reference Include="UnityEngine">
 			<HintPath>..\Assemblies\Game\UnityEngine.dll</HintPath>
 		</Reference>
 		
+		<Reference Include="UnityEngine.AssetBundleModule">
+			<HintPath>..\Assemblies\Game\UnityEngine.AssetBundleModule.dll</HintPath>
+		</Reference>
+		
+		<Reference Include="UnityEngine.UI">
+			<HintPath>..\Assemblies\Game\UnityEngine.UI.dll</HintPath>
+		</Reference>
 	</ItemGroup>
-	
+
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-		<Exec Command="../postbuild.sh &quot;$(TargetDir)$(TargetName).dll&quot;"/>
+		<Exec Command="../postbuild.sh &quot;$(TargetDir)$(TargetName).dll&quot; &quot;$(SolutionName)&quot; &quot;$(MSBuildProjectName)&quot; &quot;$(Version)&quot; &quot;$(Description)&quot;"/>
 	</Target>
 </Project>

@@ -84,5 +84,6 @@ crashlytics-build.properties
 
 # Thunderstore stuff
 /Thunderstore/**
+thunderstore.sh
 ## *.zip
 

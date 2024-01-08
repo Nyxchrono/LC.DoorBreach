@@ -1,9 +1,4 @@
-﻿using System;
-using System.Globalization;
-using System.Reflection;
-using BepInEx;
-using UnityEngine;
-using UnityEngine.Serialization;
+﻿using BepInEx;
 
 namespace Nyxchrono.DoorBreach;
 
@@ -15,13 +10,13 @@ namespace Nyxchrono.DoorBreach;
 [BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
 public class Plugin : BaseUnityPlugin
 {
-    private static BepInEx.Logging.ManualLogSource LogSource { get; set; }
+    internal static BepInEx.Logging.ManualLogSource LogSource { get; set; }
     
     #region Config
     
-    private static BepInEx.Configuration.ConfigEntry<bool> _configGeneralEnabled;
-    private static BepInEx.Configuration.ConfigEntry<int>  _configGeneralMinHits;
-    private static BepInEx.Configuration.ConfigEntry<int>  _configGeneralMaxHits;
+    internal static BepInEx.Configuration.ConfigEntry<bool> _configGeneralEnabled;
+    internal static BepInEx.Configuration.ConfigEntry<int>  _configGeneralMinHits;
+    internal static BepInEx.Configuration.ConfigEntry<int>  _configGeneralMaxHits;
     
     /*
     private static BepInEx.Configuration.ConfigEntry<bool>   configIdentBackfill;
@@ -71,17 +66,6 @@ public class Plugin : BaseUnityPlugin
     
     #endregion Config
     
-    #region Utils
-    
-    private static object GetInstanceField(Type type, object instance, string fieldName)
-    {
-        const BindingFlags bindFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
-        FieldInfo field = type.GetField(fieldName, bindFlags);
-        return field?.GetValue(instance);
-    }
-    
-    #endregion Utils
-    
     #region Unity Methods
     
     private void Awake()
@@ -90,16 +74,16 @@ public class Plugin : BaseUnityPlugin
         LoadConfig();
         
         LogSource.LogInfo($"{MyPluginInfo.PLUGIN_GUID} v{MyPluginInfo.PLUGIN_VERSION} is initializing");
-
+            
         if (_configGeneralEnabled.Value == false)
         {
             LogSource.LogInfo($"{MyPluginInfo.PLUGIN_GUID} v{MyPluginInfo.PLUGIN_VERSION} is disabled due to config setting");
             return;
         }
         
-        On.Shovel.HitShovel += Shovel_HitShovel;
-        On.RoundManager.SetLockedDoors += RoundManager_SetLockedDoors;
-
+        //ApplyPatches();
+        ApplyHooks();
+        
         LogSource.LogInfo($"{MyPluginInfo.PLUGIN_GUID} v{MyPluginInfo.PLUGIN_VERSION} has initialized");
     }
     
@@ -109,113 +93,17 @@ public class Plugin : BaseUnityPlugin
     }
 
     #endregion
-
-    #region Custom Components
-
-    public class DoorHitInfo : MonoBehaviour
-    {
-        public int NumOfHits;
-        public DoorLock Lock;
-
-        public void Start()
-        {
-            NumOfHits = 0;
-            Lock = GetComponent<DoorLock>();
-
-            if (Lock.isLocked)
-            {
-                NumOfHits = new System.Random().Next(_configGeneralMinHits.Value, _configGeneralMaxHits.Value);
-                LogSource.LogDebug($"Door ({Lock.gameObject.GetInstanceID()}) will take {NumOfHits} hits");
-            }
-        }
-        
-        public void OnHit()
-        {
-            if (--NumOfHits <= 0)
-            {
-                OpenDoor(Lock);
-            }
-            else
-            {
-                LogSource.LogDebug($"Door ({Lock.gameObject.GetInstanceID()}) has {nameof(NumOfHits)} remaining: {NumOfHits}");
-            }
-        }
-
-        public void OpenDoor(DoorLock door)
-        {
-            // Unlock door if locked
-            if (door.isLocked)
-            {
-                LogSource.LogDebug($"Unlocking door ({door.gameObject.GetInstanceID()})");
-                door.UnlockDoorSyncWithServer(); // Also unlocks locally
-            }
-
-            // Door is already open, do nothing
-            if ((bool)GetInstanceField(typeof(DoorLock), door, "isDoorOpened")) 
-                return;
-            
-            LogSource.LogDebug($"Opening door ({door.gameObject.GetInstanceID()})");
-            // door.OpenOrCloseDoor(StartOfRound.Instance.localPlayerController);
-            door.gameObject.GetComponent<AnimatedObjectTrigger>().TriggerAnimationNonPlayer(true, true);
-            door.OpenDoorAsEnemyServerRpc();
-        }
-    }
-
-    #endregion Custom Components
-
-    #region Hooks
-
-    private static void RoundManager_SetLockedDoors(On.RoundManager.orig_SetLockedDoors orig, RoundManager self, Vector3 mainEntrancePosition)
-    {
-        // Call the original game function
-        orig(self, mainEntrancePosition);
-
-        // Add our custom component to the door
-        int numOfDoors = 0;
-        foreach(DoorLock door in FindObjectsByType<DoorLock>(FindObjectsSortMode.None))
-        {
-            door.gameObject.AddComponent<DoorHitInfo>();
-            numOfDoors++;
-            
-            // Debug to make all doors locked at beginning
-            //door.LockDoor();
-        }
-        
-        LogSource.LogDebug($"Added {nameof(DoorHitInfo)} to {numOfDoors} doors");
-    }
     
-    private static void Shovel_HitShovel(On.Shovel.orig_HitShovel orig, Shovel self, bool cancel)
-    {
-        // Call the original game function
-        orig(self, cancel);
-
-        // Raycast in front of the player // This is exactly what the game does, except I've added a mask to get only doors
-        Transform gpCamTransform = self.playerHeldBy.gameplayCamera.transform;
-        var hits = Physics.SphereCastAll(
-            gpCamTransform.position + gpCamTransform.right * -0.35f,
-            0.75f,
-            gpCamTransform.forward,
-            1f,
-            1 << 9,
-            QueryTriggerInteraction.Collide
-        );
-        
-        // For each object in that sphere, check if contains the DoorHitInfo component we added
-        // at the beginning of the round
-        foreach (RaycastHit hit in hits)
-        {
-            // check the collider has locked door
-            DoorHitInfo lockedDoorInfo = hit.collider.gameObject.GetComponent<DoorHitInfo>();
-            if (lockedDoorInfo != null)
-            {
-                //string lockTypeString = (lockedDoorInfo.doorLock.isLocked ? "locked" : "unlocked");
-                //LogSource.LogDebug($"Hit a {lockTypeString} door ({lockedDoorInfo.doorLock.gameObject.GetInstanceID()})");
-                lockedDoorInfo.OnHit();
-                break;
-            }
-        }
-    }
+    //public void ApplyPatches()
+    //{
+    //    
+    //}
     
-    #endregion Hooks
+    public void ApplyHooks()
+    {
+        On.Shovel.HitShovel += Hooks.Shovel_HitShovel;
+        On.RoundManager.SetLockedDoors += Hooks.RoundManager_SetLockedDoors;
+        On.DoorLock.LockDoor += Hooks.DoorLock_LockDoor;
+    }
     
 }
